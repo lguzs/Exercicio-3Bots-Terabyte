@@ -4,15 +4,16 @@ import json
 
 
 PAGEURL = 'https://www.terabyteshop.com.br/'
-PESQUISA = 'Fonte 650W'
+PRODUTO = 'Ryzen 5 5500'
 FILE = 'produtos.json'
 QUATIDADE = 10
+PRECO_LIMITE = 600
 
 #  -----------------------------------------------------------------------------------------------------------------------
 
 def navegar_para_pagina(page, url):
     page.goto(url, wait_until='domcontentloaded')
-    page.fill('#isearch', PESQUISA)
+    page.fill('#isearch', PRODUTO)
     page.keyboard.press('Enter')
     
 
@@ -32,6 +33,7 @@ def esperar_resultados(page):
     # Isso garante que o conteúdo dentro do card (texto) foi realmente carregado.
     page.locator('.product-item__name').first.wait_for(state='visible', timeout=30000)
     print('Resultados carregados!')
+
 # -----------------------------------------------------------------------------------------------------------------------
 
 def raspar_pagina(page):
@@ -61,11 +63,14 @@ def raspar_pagina(page):
             preco = 0.0
             preco_text = "Indisponível"
 
+        ofertas = [r for r in produtos if r['preco'] and r['preco'] < PRECO_LIMITE]
+        print(ofertas)
 
         produtos.append({
             'nome': nome,
             'link': l,
-            'preco': preco
+            'preco': preco,
+            #'ofertas': ofertas
         })
     return produtos
 
@@ -75,6 +80,9 @@ def raspar_pagina(page):
 def ordenar_produtos(produtos):
     # Ordena os produtos pelo preço (do menor para o maior)
     produtos_ordenados = sorted(produtos, key=lambda x: x['preco'])
+    oferta = None
+
+    
     
     # Salva em JSON
     with open(FILE, 'w', encoding='utf-8') as f:

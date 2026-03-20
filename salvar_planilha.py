@@ -6,7 +6,7 @@ import gspread
 from dotenv import load_dotenv
 from google.oauth2.service_account import Credentials
 from playwright.async_api import async_playwright
-import scraper_terabyte
+from salvar_planilha import PRODUTO, PRECO_LIMITE
 
 
 load_dotenv()
