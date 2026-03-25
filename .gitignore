@@ -1,2 +1,6 @@
 .env
 credentials.json
+__pycache__/
+chat_id.json
+produtos.json
+ofertas.json

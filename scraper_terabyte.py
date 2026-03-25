@@ -1,13 +1,18 @@
 from playwright.sync_api import sync_playwright
 import time
 import json
+import os
+from telegram import enviar_ofertas
 
 
 PAGEURL = 'https://www.terabyteshop.com.br/'
-PRODUTO = 'Ryzen 5 5500'
-FILE = 'produtos.json'
+PRODUTO = 'ryzen 5 5500'
 QUATIDADE = 10
-PRECO_LIMITE = 600
+PRECO_LIMITE = 1000.00
+
+DIRETORIO_ATUAL = os.path.dirname(os.path.abspath(__file__))
+CAMINHO_PRODUTOS = os.path.join(DIRETORIO_ATUAL, 'produtos.json')
+CAMINHO_OFERTAS = os.path.join(DIRETORIO_ATUAL, 'ofertas.json')
 
 #  -----------------------------------------------------------------------------------------------------------------------
 
@@ -39,6 +44,7 @@ def esperar_resultados(page):
 def raspar_pagina(page):
 
     produtos = []
+    ofertas = []
 
     # devolve uma lista com os 10 primeiros itens que possuem um determinado seletor DOM
     itens = page.locator('.product-item__box').all()[:QUATIDADE]
@@ -52,27 +58,31 @@ def raspar_pagina(page):
             l = link.get_attribute('href')
         except:
             print("Erro ao extrair nome ou link do item, pulando...")
-            continue # Se falhar (ex: é um banner ou esqueleto), pula para o próximo
+            continue # se falhar (ex: é um banner ou esqueleto), pula para o próximo
         
         # pega o texto do preço e converte para float para permitir ordenação
         try:
             preco_text = item.locator('.product-item__new-price').inner_text()
-            # Remove R$, pontos de milhar e troca vírgula por ponto. Ex: "R$ 1.200,50" -> 1200.50
+            # remove R$, pontos de milhar e troca vírgula por ponto. Ex: "R$ 1.200,50" -> 1200.50
             preco = float(preco_text.replace('R$', '').replace('.', '').replace(',', '.').strip().split()[0])
         except Exception:
             preco = 0.0
             preco_text = "Indisponível"
 
-        ofertas = [r for r in produtos if r['preco'] and r['preco'] < PRECO_LIMITE]
-        print(ofertas)
-
-        produtos.append({
+        produto_atual = {
             'nome': nome,
             'link': l,
             'preco': preco,
-            #'ofertas': ofertas
-        })
-    return produtos
+        }
+
+        if preco > 0 and preco < PRECO_LIMITE:
+            print(f"OFERTA: {[produto_atual['nome'], produto_atual['preco']]}")
+            ofertas.append(produto_atual)
+        else:
+            print("Nenhuma oferta encontrada abaixo do limite de preço.")
+
+        produtos.append(produto_atual)
+    return produtos, ofertas
 
 #  -----------------------------------------------------------------------------------------------------------------------
 
@@ -80,16 +90,16 @@ def raspar_pagina(page):
 def ordenar_produtos(produtos):
     # Ordena os produtos pelo preço (do menor para o maior)
     produtos_ordenados = sorted(produtos, key=lambda x: x['preco'])
-    oferta = None
+    
 
-    
-    
     # Salva em JSON
-    with open(FILE, 'w', encoding='utf-8') as f:
-        json.dump(produtos_ordenados, f, ensure_ascii=False, indent=2)
+    with open(CAMINHO_PRODUTOS, 'w', encoding='utf-8') as f: #
+        json.dump(produtos_ordenados, f, ensure_ascii=False, indent=2) # Salva a lista de produtos ordenados em um arquivo JSON, com formatação legível e suporte a caracteres acentuados.
     
-    print(f'Produtos salvos em {FILE}')
+    print(f'Produtos salvos em {CAMINHO_PRODUTOS}')
     return produtos_ordenados
+
+
 
 
 #  -----------------------------------------------------------------------------------------------------------------------
@@ -104,8 +114,17 @@ def main():
 
         navegar_para_pagina(page, PAGEURL)
         esperar_resultados(page)
-        produtos = raspar_pagina(page)
+        produtos, ofertas = raspar_pagina(page)
         produtos_ordenados = ordenar_produtos(produtos)
+
+        # Salva as ofertas em um JSON separado
+        if ofertas:
+            with open(CAMINHO_OFERTAS, 'w', encoding='utf-8') as f:
+                json.dump(ofertas, f, ensure_ascii=False, indent=2)
+            print(f'{len(ofertas)} ofertas salvas em {CAMINHO_OFERTAS}')
+        
+        enviar_ofertas()
+
 
 
         content.close()
