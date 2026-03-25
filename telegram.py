@@ -5,7 +5,7 @@ import json
 import os
 import time
 
-bot = telebot.TeleBot("8673078264:AAEnnENW1bAP8QqmaeIAm8xzu6iVjFvT2hc")
+bot = telebot.TeleBot("ID")
 
 # Define caminhos absolutos para evitar erros de arquivo não encontrado
 DIRETORIO_ATUAL = os.path.dirname(os.path.abspath(__file__))
